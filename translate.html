@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>translate</title>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <!-- 引入组件库 -->
+</head>
+
+<body>
+    <script src="https://unpkg.com/vue/dist/vue.js"></script>
+    <!-- import JavaScript -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0/jquery.min.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.10.0/js/md5.min.js'></script>
+    <div id="app">
+
+
+
+        <el-row justify="center" align="middle" type="flex">
+            <el-col :span="8">
+                <el-input type="textarea" :autosize="{ minRows: 10,maxRows:10}" placeholder="请输入内容" v-model="JSON.stringify(textareaFrom)">
+                </el-input>
+            </el-col>
+            <el-col :span="8">
+                <div style="text-align: center">
+                    <el-select v-model="value" placeholder="请选择">
+                        <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value">
+                        </el-option>
+                    </el-select>
+                    <el-button @click="Begin" >Translate</el-button>
+                </div>
+            </el-col>
+            <el-col :span="8">
+                <el-input type="textarea" :autosize="{ minRows: 10,maxRows:10}" placeholder="请输入内容" v-model="JSON.stringify(textareaTo)">
+                </el-input>
+            </el-col>
+        </el-row>
+    </div>
+</body>
+
+</html>
+<script>
+
+
+    // dataFor(array).then((data)=>{
+    //     document.write(JSON.stringify(array))
+    // })
+    // document.write(JSON.stringify(array))
+
+    new Vue({
+        el: '#app',
+        data: function () {
+            return {
+                options: [{
+                    label: '英文',
+                    value: 'en'
+                }, {
+                    label: '韩文',
+                    value: 'kor'
+                }, {
+                    label: '泰国',
+                    value: 'th'
+                }, {
+                    label: '繁体中文',
+                    value: 'cht'
+                }],
+                value: 'en',
+                textareaFrom: {
+                    menu: {
+                        AuthoritymManagement: '权限管理',
+                    }
+                },
+                textareaTo: '',
+                List: {},
+            }
+        },
+        methods: {
+            translate(v) {
+                let that = this;
+                return new Promise((resolve, reject) => {
+                    $.ajax({
+                        type: 'get',
+                        dataType: 'jsonp',
+                        timeout: 100000000000000,
+                        url: "http://api.fanyi.baidu.com/api/trans/vip/translate",
+                        data: {
+                            from: "auto",
+                            to: that.value,
+                            appid: '20180906000203547',
+                            q: v,
+                            salt: 'test',
+                            sign: md5('20180906000203547' + v + 'test' + 'GFDxGkGOKnxNVoB22hLX'),
+                        },
+                        success: function (json) {
+                            if (json.trans_result) {
+                                resolve(json.trans_result[0].dst)
+                            } else {
+                                console.log(v)
+                            }
+                        }
+                    });
+                })
+            },
+            async  dataFor(v) {
+                if (typeof v == 'object') {
+                    for (var item in v) {
+                        if (typeof v[item] == 'object') {
+                            this.dataFor(v[item])
+                        } else {
+                            v[item] = await this.translate(v[item])
+                        }
+                    }
+                }
+            },
+            Begin() {
+                const loading = this.$loading({
+                    lock: true,
+                    text: 'Loading',
+                    spinner: 'el-icon-loading',
+                    background: 'rgba(0, 0, 0, 0.7)'
+                });
+                this.dataFor(this.List).then(() => {
+                    this.textareaTo = this.List;
+                    loading.close()
+                })
+            }
+        },
+        watch: {
+            textareaFrom: {
+                handler() {
+                    let that = this;
+                    this.List = JSON.parse(JSON.stringify(that.textareaFrom))
+                },
+                immediate: true
+            }
+        }
+    })
+
+
+
+</script>
